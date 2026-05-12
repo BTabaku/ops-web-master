@@ -55,7 +55,12 @@ npm run guide -- [flags]
 Example — vote for Juli, 5–8 parallel, every 3 seconds, watch mode:
 
 ```bash
-npm run guide -- --answer "Juli" --refresh-seconds 3 --min-concurrency 5 --max-concurrency 8 --headless false
+npm run guide -- --answer "David" --refresh-seconds 3 --min-concurrency 5 --max-concurrency 8 --headless false
+```
+
+### USE THIS
+```bash
+npm run guide -- --answer "David" --refresh-seconds 4 --min-concurrency 3 --max-concurrency 5
 ```
 
 ## Single-instance guard
