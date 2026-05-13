@@ -172,21 +172,24 @@ async function findVoteButton(page: import("@playwright/test").Page): Promise<Lo
 // ─────────────────────────────────────────────────────────────────────────────
 // Browser (single shared instance — many fresh contexts, one cookie jar each)
 // ─────────────────────────────────────────────────────────────────────────────
-let browser: Browser;
-try {
-  browser = await chromium.launch({
+async function launchBrowser(): Promise<Browser> {
+  return await chromium.launch({
     headless,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
-      "--disable-gpu",                              // required on headless Linux servers
+      "--disable-gpu", // required on headless Linux servers
       "--disable-blink-features=AutomationControlled",
       "--disable-extensions",
       "--disable-background-networking",
-      "--single-process",                          // more stable on low-memory VPS
     ],
   });
+}
+
+let browser: Browser;
+try {
+  browser = await launchBrowser();
 } catch (launchErr) {
   const msg = launchErr instanceof Error ? launchErr.message : String(launchErr);
   if (msg.includes("shared libraries") || msg.includes("No such file") || msg.includes("ENOENT")) {
@@ -204,6 +207,7 @@ try {
 
 let totalVotes  = 0;
 let totalErrors = 0;
+let shuttingDown = false;
 
 const USER_AGENTS = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -219,7 +223,19 @@ const USER_AGENTS = [
 // ─────────────────────────────────────────────────────────────────────────────
 const MAX_RETRIES = 2;
 
-async function castOneVote(attemptNumber: number): Promise<boolean> {
+async function castOneVote(attemptNumber: number, relaunchAttempt = 0): Promise<boolean> {
+  if (shuttingDown) return false;
+
+  if (!browser.isConnected()) {
+    if (relaunchAttempt > 0) return false;
+    try {
+      browser = await launchBrowser();
+      log(`${ts()}  ${C.yellow}\u21ba Browser disconnected, relaunched.${C.reset}\n`);
+    } catch {
+      return false;
+    }
+  }
+
   let context: BrowserContext | null = null;
   try {
     context = await browser.newContext({
@@ -296,8 +312,21 @@ async function castOneVote(attemptNumber: number): Promise<boolean> {
 
     return false;  // exhausted retries without throwing
   } catch (err) {
+    if (shuttingDown) return false;
+
     const msg = err instanceof Error ? err.message : String(err);
     const detail = msg.split("\n")[0].slice(0, 150);
+
+    if (/Target page, context or browser has been closed/i.test(detail) && relaunchAttempt < 1) {
+      try {
+        browser = await launchBrowser();
+        log(`${ts()}  ${C.yellow}\u21ba Browser crashed, relaunched and retrying vote #${attemptNumber}.${C.reset}\n`);
+        return await castOneVote(attemptNumber, relaunchAttempt + 1);
+      } catch {
+        // fall through and print the original error
+      }
+    }
+
     log(`\n${C.red}${C.bold}\u2717\u2717\u2717 ERROR [#${attemptNumber}] \u2717\u2717\u2717${C.reset}\n`);
     log(`${C.red}${ts()}  ${detail}${C.reset}\n\n`);
     return false;
@@ -315,6 +344,7 @@ log(`${ts()}  Starting vote loop...\n\n`);
 const startTime = Date.now();
 
 process.on("SIGINT", async () => {
+  shuttingDown = true;
   const elapsedMin = (Date.now() - startTime) / 60_000;
   const rate = elapsedMin > 0.01 ? (totalVotes / elapsedMin).toFixed(1) : "\u2014";
   log(
