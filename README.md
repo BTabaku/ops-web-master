@@ -54,6 +54,10 @@ Browser window opens, voting starts immediately. Press **Ctrl+C** to stop.
 npm run vote -- --answer "Juli"
 npm run vote -- --answer "David" --refresh-seconds 2 --min-concurrency 5 --max-concurrency 8
 npm run vote -- --headless true
+
+nohup npm run vote:fast -- --headless true > vote.log 2>&1 &
+
+
 ```
 
 | Flag | Default | Description |
@@ -91,6 +95,8 @@ Press Ctrl+C to stop.
 - `↺ retrying` = page loaded blank, reloading automatically (yellow)
 
 ---
+
+
 
 ## Poll answers
 
