@@ -31,6 +31,10 @@ npm run setup:linux
 ```bash
 npm run vote
 ```
+to vote faster 
+```bash
+npm run vote:fast -- --headless true
+```
 
 Browser window opens, voting starts immediately. Press **Ctrl+C** to stop.
 
