@@ -1,111 +1,92 @@
 # Poll Voter
 
-Automated Playwright-based vote bot for Crowdsignal polls embedded in WordPress pages.  
-Runs headless (or visible), fires multiple parallel votes per round, refreshes every few seconds, and **auto-clicks the target button** — no manual interaction needed.
+Automated vote bot — opens a real browser, finds the David button, clicks it repeatedly.
 
-## Quick start
+---
+
+## 1. Install (once)
 
 ```bash
 npm install
-npx playwright install chromium   # one-time browser install
-npm run guide:david               # start voting for David
+npx playwright install chromium
 ```
 
-Output:
-```
-┌────────────────────────────────────────────────────────────────┐
-│  POLL VOTER                                                      │
-├────────────────────────────────────────────────────────────────┤
-│ Target       David                                               │
-│ URL          https://myfuturengo.wordpress.com/2026/05/11/871/  │
-│ Interval     4 s ± 1 s jitter                                   │
-│ Batch size   3–5 (random per round)                             │
-│ Headless     yes                                                 │
-└────────────────────────────────────────────────────────────────┘
-Press Ctrl+C to stop.
-
-00:16:01  ×4  +4   total    4  12.3 v/min
-00:16:06  ×3  +3   total    7  13.1 v/min
-```
-
-## npm scripts
-
-| Script | What it does |
-|--------|-------------|
-| `npm run guide:david` | Vote for David, headless, 3–5 parallel, every 4 s |
-| `npm run guide:david:watch` | Same but opens a visible browser window |
-| `npm run guide:david:fast` | 5–8 parallel votes per round |
-| `npm run guide` | Fully custom via flags (see below) |
-
-## CLI flags
+## 2. Run
 
 ```bash
-npm run guide -- [flags]
+npm run vote
+```
+
+Browser window opens, voting starts immediately. Press **Ctrl+C** to stop.
+
+---
+
+## Scripts
+
+| Command | What it does |
+|---------|-------------|
+| `npm run vote` | Vote for David — visible browser, 3–5 parallel, every 3 s |
+| `npm run vote:fast` | 5–8 parallel, every 2 s (~50 votes/min) |
+| `npm run vote:headless` | Hidden browser (no window) |
+
+## Custom options
+
+```bash
+npm run vote -- --answer "Juli"
+npm run vote -- --answer "David" --refresh-seconds 2 --min-concurrency 5 --max-concurrency 8
+npm run vote -- --headless true
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--answer "Name"` | `David` | Exact label of the poll option to vote for |
-| `--url "https://..."` | WordPress poll URL | Poll page to open |
-| `--refresh-seconds N` | `4` | Seconds between vote rounds |
-| `--min-concurrency N` | `3` | Min parallel votes per round |
-| `--max-concurrency N` | `5` | Max parallel votes per round |
-| `--headless false` | `true` | Open a visible Chromium window |
+| `--answer` | `David` | Who to vote for |
+| `--refresh-seconds` | `3` | Seconds between rounds |
+| `--min-concurrency` | `3` | Min parallel votes per round |
+| `--max-concurrency` | `5` | Max parallel votes per round |
+| `--headless true` | visible | Hide the browser window |
 
-Example — vote for Juli, 5–8 parallel, every 3 seconds, watch mode:
+---
 
-```bash
-npm run guide -- --answer "David" --refresh-seconds 3 --min-concurrency 5 --max-concurrency 8 --headless false
+## Reading the output
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  POLL VOTER                                                     │
+├────────────────────────────────────────────────────────────────┤
+│ Target       David                                              │
+│ Interval     3 s ± 1 s jitter                                  │
+│ Batch/round  3–5 (random)                                      │
+│ Browser      visible                                            │
+└────────────────────────────────────────────────────────────────┘
+Press Ctrl+C to stop.
+
+01:09:55  ×4  + 4       total    4  14.2 v/min
+01:09:59  ×3  + 3       total    7  15.1 v/min
+↺ [#8] Button not found, retrying attempt 1/2...
+01:10:04  ×5  + 5       total   12  18.3 v/min
 ```
 
-### USE THIS
-```bash
-npm run guide -- --answer "David" --refresh-seconds 4 --min-concurrency 3 --max-concurrency 5
-```
+- `×4` = 4 parallel votes fired this round
+- `+4` = 4 votes confirmed (green)
+- `✗1` = 1 error (red)
+- `↺ retrying` = page loaded blank, reloading automatically (yellow)
 
-## Single-instance guard
+---
 
-Running `npm run guide:david` again **automatically kills the previous instance** before starting. A PID lockfile at `<tmpdir>/poll-voter.pid` tracks the running process. No need to manually Ctrl+C first.
+## Poll answers
 
-## How it works
-
-Each vote round:
-1. Spawns N fresh browser contexts (new cookie jar each = fresh vote slot).
-2. Navigates to the poll page and waits for the Crowdsignal widget to fully load (`networkidle`).
-3. Dismisses WordPress cookie banners and GDPR overlays automatically.
-4. Locates the target button by `value=` attribute (with `answerid=` as legacy fallback).
-5. Scrolls it into view and clicks it.
-6. Waits 1.5 s for the vote request to fire, then closes the context.
-
-## Browser app (Vite UI)
-
-A companion web UI lists all poll options and generates the correct CLI command for each:
-
-```bash
-npm run dev
-```
-
-Open the local URL printed in the terminal.
-
-## Poll target
-
-```text
-https://myfuturengo.wordpress.com/2026/05/11/871/
-```
-
-Known answer IDs:
-
-| Answer | ID |
-|--------|----|
+| Name | Answer ID |
+|------|-----------|
 | Alvin | 74310880 |
 | AMS | 74310889 |
 | Baca | 74310891 |
-| David | 74310892 |
+| **David** | **74310892** |
 | Juli | 74310893 |
 | Koja | 74310900 |
 | Luis | 74310901 |
 | Santiliano | 74310902 |
 | Sejgi | 74310916 |
 | Simple M | 74310917 |
-# ops-web-master
-# ops-web-master
+
+**Poll URL:** `https://myfuturengo.wordpress.com/2026/05/11/871/`
+

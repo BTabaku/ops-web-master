@@ -57,8 +57,8 @@ const C = {
   green:  "\x1b[32m", red:   "\x1b[31m", yellow: "\x1b[33m",
   cyan:   "\x1b[36m", white: "\x1b[97m",
 } as const;
-const o = (s: string) => process.stdout.write(s);
-const e = (s: string) => process.stderr.write(s);
+// All output to stdout only — single write per line, no double-printing
+const log = (s: string) => process.stdout.write(s);
 const ts = () => `${C.dim}${new Date().toLocaleTimeString("en-GB")}${C.reset}`;
 
 function printHeader() {
@@ -67,18 +67,18 @@ function printHeader() {
   const row = (label: string, val: string) => {
     const visibleVal = val.replace(/\x1b\[[0-9;]*m/g, "");
     const pad = W - 1 - 1 - label.padEnd(12).length - 1 - visibleVal.length;
-    o(`\u2502 ${C.dim}${label.padEnd(12)}${C.reset} ${val}${" ".repeat(Math.max(pad, 0))}\u2502\n`);
+    log(`\u2502 ${C.dim}${label.padEnd(12)}${C.reset} ${val}${" ".repeat(Math.max(pad, 0))}\u2502\n`);
   };
-  o(`\n\u250c${hr}\u2510\n`);
-  o(`\u2502  ${C.bold}${C.white}POLL VOTER${C.reset}${" ".repeat(W - 12)}\u2502\n`);
-  o(`\u251c${hr}\u2524\n`);
+  log(`\n\u250c${hr}\u2510\n`);
+  log(`\u2502  ${C.bold}${C.white}POLL VOTER${C.reset}${" ".repeat(W - 12)}\u2502\n`);
+  log(`\u251c${hr}\u2524\n`);
   row("Target",      `${C.cyan}${C.bold}${targetAnswer}${C.reset}`);
   row("URL",         `${C.dim}${targetUrl}${C.reset}`);
   row("Interval",    `${C.yellow}${intervalMs / 1_000} s${C.reset} \u00b1 1 s jitter`);
   row("Batch/round", `${C.yellow}${minConcurrency}\u2013${maxConcurrency}${C.reset} (random)`);
   row("Browser",     headless ? `${C.dim}headless${C.reset}` : `${C.green}visible${C.reset}`);
-  o(`\u2514${hr}\u2518\n`);
-  o(`${C.dim}Press Ctrl+C to stop.${C.reset}\n\n`);
+  log(`\u2514${hr}\u2518\n`);
+  log(`${C.dim}Press Ctrl+C to stop.${C.reset}\n\n`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ async function castOneVote(attemptNumber: number): Promise<boolean> {
 
       if (!btn) {
         if (attempt < MAX_RETRIES) {
-          e(`${C.yellow}  ↺ [#${attemptNumber}] Button not found, retrying (${attempt + 1}/${MAX_RETRIES})…${C.reset}\n`);
+          log(`${ts()}  ${C.yellow}\u21ba [#${attemptNumber}] Button not found, retrying attempt ${attempt + 1}/${MAX_RETRIES}...${C.reset}\n`);
           continue;  // reload and try again
         }
         throw new Error(`Button for "${targetAnswer}" not found after ${MAX_RETRIES + 1} attempts`);
@@ -277,7 +277,9 @@ async function castOneVote(attemptNumber: number): Promise<boolean> {
     return false;  // exhausted retries without throwing
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    e(`${C.red}  ✗ [#${attemptNumber}] ${msg.split("\n")[0].slice(0, 120)}${C.reset}\n`);
+    const detail = msg.split("\n")[0].slice(0, 150);
+    log(`\n${C.red}${C.bold}\u2717\u2717\u2717 ERROR [#${attemptNumber}] \u2717\u2717\u2717${C.reset}\n`);
+    log(`${C.red}${ts()}  ${detail}${C.reset}\n\n`);
     return false;
   } finally {
     await context?.close().catch(() => undefined);
@@ -288,18 +290,19 @@ async function castOneVote(attemptNumber: number): Promise<boolean> {
 // Main loop
 // ─────────────────────────────────────────────────────────────────────────────
 printHeader();
+log(`${ts()}  Starting vote loop...\n\n`);
 
 const startTime = Date.now();
 
 process.on("SIGINT", async () => {
   const elapsedMin = (Date.now() - startTime) / 60_000;
   const rate = elapsedMin > 0.01 ? (totalVotes / elapsedMin).toFixed(1) : "\u2014";
-  o(
-    `\n${C.bold}Stopped.${C.reset}` +
-    `  Total: ${C.green}${C.bold}${totalVotes} votes${C.reset}` +
-    `  Errors: ${totalErrors > 0 ? C.red : C.dim}${totalErrors}${C.reset}` +
-    `  Elapsed: ${elapsedMin.toFixed(1)} min` +
-    `  Rate: ${C.yellow}${rate} v/min${C.reset}\n`
+  log(
+    `\n${C.bold}${C.green}\u2713 Stopped gracefully.${C.reset}\n` +
+    `${ts()}  Total: ${C.green}${C.bold}${totalVotes} votes${C.reset}  |  ` +
+    `Errors: ${totalErrors > 0 ? C.red : C.dim}${totalErrors}${C.reset}  |  ` +
+    `Elapsed: ${elapsedMin.toFixed(1)} min  |  ` +
+    `Rate: ${C.yellow}${rate} v/min${C.reset}\n\n`
   );
   await browser.close().catch(() => undefined);
   process.exit(0);
@@ -320,7 +323,7 @@ while (true) {
   const elapsedMin = (Date.now() - startTime) / 60_000;
   const rate = elapsedMin > 0.01 ? (totalVotes / elapsedMin).toFixed(1) : "\u2014";
 
-  o(
+  log(
     `${ts()}  ` +
     `${C.cyan}\u00d7${roundSize}${C.reset}  ` +
     `${C.green}+${String(successes).padStart(2)}${C.reset}` +

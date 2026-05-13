@@ -7,10 +7,9 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "guide": "tsx src/guide-vote.ts",
-    "guide:david": "tsx src/guide-vote.ts --answer David --refresh-seconds 3 --min-concurrency 3 --max-concurrency 5",
-    "guide:david:headless": "tsx src/guide-vote.ts --answer David --refresh-seconds 3 --min-concurrency 3 --max-concurrency 5 --headless true",
-    "guide:david:fast": "tsx src/guide-vote.ts --answer David --refresh-seconds 2 --min-concurrency 5 --max-concurrency 7",
+    "vote": "tsx src/guide-vote.ts",
+    "vote:fast": "tsx src/guide-vote.ts --refresh-seconds 2 --min-concurrency 5 --max-concurrency 8",
+    "vote:headless": "tsx src/guide-vote.ts --headless true",
     "check": "tsc --noEmit"
   },
   "dependencies": {
