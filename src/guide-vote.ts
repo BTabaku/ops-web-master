@@ -172,15 +172,35 @@ async function findVoteButton(page: import("@playwright/test").Page): Promise<Lo
 // ─────────────────────────────────────────────────────────────────────────────
 // Browser (single shared instance — many fresh contexts, one cookie jar each)
 // ─────────────────────────────────────────────────────────────────────────────
-const browser: Browser = await chromium.launch({
-  headless,
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-blink-features=AutomationControlled",
-  ],
-});
+let browser: Browser;
+try {
+  browser = await chromium.launch({
+    headless,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",                              // required on headless Linux servers
+      "--disable-blink-features=AutomationControlled",
+      "--disable-extensions",
+      "--disable-background-networking",
+      "--single-process",                          // more stable on low-memory VPS
+    ],
+  });
+} catch (launchErr) {
+  const msg = launchErr instanceof Error ? launchErr.message : String(launchErr);
+  if (msg.includes("shared libraries") || msg.includes("No such file") || msg.includes("ENOENT")) {
+    process.stdout.write(
+      `\n${C.red}${C.bold}\u2717 Browser failed to launch: missing system libraries.${C.reset}\n\n` +
+      `${C.yellow}Fix with (run on the server):\n` +
+      `  sudo npx playwright install-deps chromium\n` +
+      `  npx playwright install chromium\n${C.reset}\n`
+    );
+  } else {
+    process.stdout.write(`\n${C.red}${C.bold}\u2717 Browser launch failed:\n${msg.split("\n")[0]}${C.reset}\n\n`);
+  }
+  process.exit(1);
+}
 
 let totalVotes  = 0;
 let totalErrors = 0;

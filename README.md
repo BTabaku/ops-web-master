@@ -11,6 +11,21 @@ npm install
 npx playwright install chromium
 ```
 
+### On a Linux server (no display)
+
+The browser needs system libraries. Run these once with sudo:
+
+```bash
+sudo npx playwright install-deps chromium
+npx playwright install chromium
+```
+
+Or use the shortcut script:
+
+```bash
+npm run setup:linux
+```
+
 ## 2. Run
 
 ```bash
