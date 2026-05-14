@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "vote": "tsx src/guide-vote.ts",
-    "vote:fast": "tsx src/guide-vote.ts --refresh-seconds 4 --min-concurrency 8 --max-concurrency 15",
+    "vote:fast": "tsx src/guide-vote.ts --refresh-seconds 4 --min-concurrency 15 --max-concurrency 20",
     "vote:headless": "tsx src/guide-vote.ts --headless true",
     "setup": "npx playwright install chromium",
     "setup:linux": "sudo npx playwright install-deps chromium && npx playwright install chromium",

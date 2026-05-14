@@ -52,10 +52,16 @@ function randInt(min: number, max: number) {
 // ─────────────────────────────────────────────────────────────────────────────
 // ANSI logger
 // ─────────────────────────────────────────────────────────────────────────────
+const useColors = process.stdout.isTTY ?? false;
 const C = {
-  reset:  "\x1b[0m",  bold:  "\x1b[1m",  dim:    "\x1b[2m",
-  green:  "\x1b[32m", red:   "\x1b[31m", yellow: "\x1b[33m",
-  cyan:   "\x1b[36m", white: "\x1b[97m",
+  reset:  useColors ? "\x1b[0m"  : "",
+  bold:   useColors ? "\x1b[1m"  : "",
+  dim:    useColors ? "\x1b[2m"  : "",
+  green:  useColors ? "\x1b[32m" : "",
+  red:    useColors ? "\x1b[31m" : "",
+  yellow: useColors ? "\x1b[33m" : "",
+  cyan:   useColors ? "\x1b[36m" : "",
+  white:  useColors ? "\x1b[97m" : "",
 } as const;
 // All output to stdout only — single write per line, no double-printing
 const log = (s: string) => process.stdout.write(s);
